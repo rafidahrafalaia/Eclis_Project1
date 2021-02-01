@@ -1,0 +1,48 @@
+GET http://localhost:3001/api/token
+Content-Type: application/json
+
+{
+   "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg5MjkwMTIxLWFmOWQtNDY4OS05MzkzLTZkMWE4MDc3NGZkYSIsIm5hbWEiOm51bGwsImVtYWlsIjoidXNlckB0ZXN0LmNvbSIsInJvbGUiOm51bGwsInBlcm1pc3Npb24iOm51bGwsImphYmF0YW4iOm51bGwsImltZ3Byb2ZpbGUiOm51bGwsImlhdCI6MTYxMDg3NDg2OCwiZXhwIjoxNjEwODc0ODczfQ.2w6kultHAKvW5Ru47nGuC7p1CJjJsI6mKVSSmyDSTO0"
+}
+###
+
+POST http://localhost:3001/api/loginUser
+Content-Type: application/json
+
+{
+   "email":"user@test.com",
+   "userPassword":"1234"
+} 
+
+###
+
+GET http://localhost:3001/api/test
+Content-Type: application/json
+
+{
+   "username":"Jim"
+} 
+###
+
+DELETE  http://localhost:3001/api/logout
+Content-Type: application/json
+
+{
+  
+} 
+###
+
+GET  http://localhost:3001/api/login-sso
+Content-Type: application/json
+
+{
+  
+} 
+###
+
+GET  http://localhost:3001/api/user
+Content-Type: application/json
+
+{
+  
+} 
