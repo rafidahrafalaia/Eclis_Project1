@@ -1,8 +1,9 @@
-GET http://localhost:3001/api/token
+POST http://localhost:3001/api/register
 Content-Type: application/json
 
 {
-   "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg5MjkwMTIxLWFmOWQtNDY4OS05MzkzLTZkMWE4MDc3NGZkYSIsIm5hbWEiOm51bGwsImVtYWlsIjoidXNlckB0ZXN0LmNvbSIsInJvbGUiOm51bGwsInBlcm1pc3Npb24iOm51bGwsImphYmF0YW4iOm51bGwsImltZ3Byb2ZpbGUiOm51bGwsImlhdCI6MTYxMDg3NDg2OCwiZXhwIjoxNjEwODc0ODczfQ.2w6kultHAKvW5Ru47nGuC7p1CJjJsI6mKVSSmyDSTO0"
+   "email":"user@test.com",
+   "userPassword":"1234"
 }
 ###
 
@@ -15,22 +16,14 @@ Content-Type: application/json
 } 
 
 ###
-
-GET http://localhost:3001/api/test
+GET  http://localhost:3001/api/testGet
 Content-Type: application/json
 
 {
-   "username":"Jim"
 } 
+
 ###
 
-DELETE  http://localhost:3001/api/logout
-Content-Type: application/json
-
-{
-  
-} 
-###
 
 GET  http://localhost:3001/api/login-sso
 Content-Type: application/json
@@ -40,9 +33,74 @@ Content-Type: application/json
 } 
 ###
 
-GET  http://localhost:3001/api/user
+POST  http://localhost:3001/api/logout
 Content-Type: application/json
 
 {
   
+} 
+//CRUD
+###
+POST  http://localhost:3001/api/createRoles
+Content-Type: application/json
+
+{
+  "name":"Almighty7",
+  "description":"Grant Almighty Power, use it wisely"
+
+} 
+###
+POST  http://localhost:3001/api/createPermission
+Content-Type: application/json
+
+{
+  "role_id":"dd188417-9b8f-46f4-ba2a-f36cda5e5d3f",
+  "name":"CRUD Document",
+  "description":"admin-crud_doc"
+
+} 
+###
+POST  http://localhost:3001/api/createDocument
+Content-Type: application/json
+
+{
+   "pasal":"pasal 5",
+   "isi":"pasal 6"
+} 
+###
+POST  http://localhost:3001/api/createRolePerm
+Content-Type: application/json
+
+{
+   "role_id":"6860040e-24e7-428d-a67b-8dfd103e290d",
+   "permission_id":"63c0b55c-dcf8-4882-86e2-6e50017f4e25"
+} 
+###
+POST  http://localhost:3001/api/createJabatan
+Content-Type: application/json
+
+{
+   "name":"Admin",
+   "root_parent_id":"a25e8b94-c98a-438f-acfd-6688c2291d0f",
+   "user_id":"a25e8b94-c98a-438f-acfd-6688c2291d0f"
+} 
+###
+GET  http://localhost:3001/api/readAll
+Content-Type: application/json
+
+{
+
+} 
+###
+POST  http://localhost:3001/api/searchRoles
+Content-Type: application/json
+
+{
+ "id":"dd188417-9b8f-46f4-ba2a-f36cda5e5d3f"
+} 
+###
+POST  http://localhost:3001/api/readRoles
+Content-Type: application/json
+
+{
 } 

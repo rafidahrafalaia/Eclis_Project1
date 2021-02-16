@@ -6,7 +6,8 @@ const Role = sequelize.define("roles", {
     id: {
     type: DataTypes.STRING,
     // defaultValue: uuidv4(),
-    primaryKey:true
+    primaryKey:true,
+    allowNull: false
   },
   name: DataTypes.STRING,
   description: DataTypes.STRING,

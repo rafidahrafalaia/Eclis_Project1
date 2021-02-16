@@ -6,7 +6,6 @@ const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const config = require('./config')
 const app = express();
-var SSO = require('sso-ui');
 const CRUDRoute = require('./Router/routeCRUD')
 const AuthRoute = require('./Router/routeAuth')
 const SSORoute = require('./Router/routeSSO')
@@ -28,7 +27,6 @@ app.use(
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// app.use(CRUDRoute)
 app.use("/api",AuthRoute,CRUDRoute)
 app.use(SSORoute)
 
@@ -39,6 +37,7 @@ db.sequelize.sync(
 ).then(() => {
   console.log("re-sync db.");
 });
+
 app.listen(3001, () => {
   console.log("running server");
 });

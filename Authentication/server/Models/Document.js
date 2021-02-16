@@ -2,19 +2,18 @@ const { Sequelize, Model, DataTypes } = require("sequelize");
 const { v4: uuidv4 } = require('uuid');
 
 module.exports = (sequelize, Sequelize) => {
-const Permissions = sequelize.define("permissions", {
+const Document = sequelize.define("document", {
     id: {
     type: DataTypes.STRING,
-    allowNull: false,
     // defaultValue: uuidv4(),
-    primaryKey:true
+    primaryKey:true, 
+    allowNull: false
   },
-  name: DataTypes.STRING,
-  description: DataTypes.STRING,
-  system_environment: DataTypes.STRING,
-  domain_environment: DataTypes.STRING,
+  pasal: DataTypes.STRING,
+  isi: DataTypes.STRING(1000),
+  created_by: DataTypes.STRING,
 //   jabatan: DataTypes.STRING,
 //   permission: DataTypes.STRING
 });
-return Permissions;
+return Document;
 };

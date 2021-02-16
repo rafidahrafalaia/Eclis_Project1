@@ -6,11 +6,12 @@ const Users = sequelize.define("users", {
     id: {
     type: DataTypes.STRING,
     // defaultValue: uuidv4(),
-    primaryKey:true
+    primaryKey:true,
+    allowNull: false
   },
   username: DataTypes.STRING,
   email: DataTypes.STRING,
-  password: DataTypes.STRING,
+  password: DataTypes.STRING(500),
   role: DataTypes.STRING,
   jabatan_fungsional: DataTypes.STRING,
   jabatan_struktual: DataTypes.STRING,

@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 var SSO = require('sso-ui');
 const app = express();
-
+const jwt = require("jsonwebtoken");
+const AuthController = require('../Controllers/auth');
 var statloggedIn='';
 var sso = new SSO({
 	url: 'http://localhost:3001', //required
@@ -15,15 +16,24 @@ app.use(sso.middleware)
 router.get('/api/login-sso', sso.login, function(req, res) {
     const session = req.session[ 'sso_user' ]
     statloggedIn=true;
-    console.log(session,statloggedIn,"session");
-    res.send({ session });
+    console.log(session,statloggedIn,"session"); 
+    
+    // const token = jwt.sign(session,process.env.ACCESS_TOKEN_SECRET,{ expiresIn: '5s' })
+    res.cookie('tokenSSO', session, {
+        expires: new Date(Date.now() + 21600000),
+        httpOnly: true
+      });
+    res.redirect('http://localhost:3000/dashboard');
 });
 
-router.get('/api/logout-sso', sso.logout, function(req, res){
-    const session = req.session[ 'sso_user' ]
-    statloggedIn=false;
-    console.log(session,statloggedIn,"session");
-    res.send({ session })
+router.get('/api/logout-sso',sso.logout, function(req, res){
+    // res.status(200).clearCookie('tokenSSO', {
+    //   path: '/'
+    // });
+    // req.session.destroy(function (err) {
+    //   res.redirect('/');
+    // });
+    console.log("logoutSSO")
 });
 router.get('/api/middleware', sso.middleware);
 router.get('/api/user', sso.login, function(req, res) {
@@ -35,9 +45,13 @@ router.get('/api/getUser', function(req, res) {
     res.send({ session });
 });
 router.get('/api/logoutsso', sso.clear, function(req, res) {
-    const session = req.session[ 'sso_user' ]
-    console.log(session,loggedIn,"session&loggedIn");
-    res.send({ session })
+    res.status(200).clearCookie('tokenSSO', {
+      path: '/'
+    });
+    req.session.destroy(function (err) {
+      res.redirect('/');
+    });
+    console.log("logoutSSO")
     res.redirect('/');
 });
 router.get('/api/route/to/critical/data', sso.block, function(req, res) {

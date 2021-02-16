@@ -8,10 +8,7 @@ const BlacklistToken = sequelize.define("blacklist_token", {
     // defaultValue: uuidv4(),
     primaryKey:true
   },
-  token: DataTypes.STRING
-//   domain_environment: DataTypes.STRING,
-//   jabatan: DataTypes.STRING,
-//   permission: DataTypes.STRING
+  token: DataTypes.STRING(500)
 });
 return BlacklistToken;
 };

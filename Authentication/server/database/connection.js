@@ -6,26 +6,34 @@ const sequelize = new Sequelize('database', 'root', 'Rahasia2', {
   dialect: 'mariadb',
   port:'8080' 
 });
-const db = mysql.createConnection({
-    user: "root",
-    host: "localhost",
-    password: "Rahasia2",
-    database: "database",
-    port:"8080"
-  });
+// const db = mysql.createConnection({
+//     user: "root",
+//     host: "localhost",
+//     password: "Rahasia2",
+//     database: "database",
+//     port:"8080"
+//   });
   
-  
-const users = require("../Models/Users")(sequelize, Sequelize);
-const permission = require("../Models/Permissions")(sequelize, Sequelize);
-const jabatan = require("../Models/Jabatan")(sequelize, Sequelize);
-const role = require("../Models/Role")(sequelize, Sequelize);
-const BlacklistToken = require("../Models/BlacklistToken")(sequelize, Sequelize);
-module.exports = {
-    db: db,
-    sequelize:sequelize,
-    users: users,
-    permission: permission,
-    jabatan: jabatan,
-    role: role,
-    BlacklistToken:BlacklistToken
+  sequelize.users = require("../Models/Users")(sequelize, Sequelize);
+  sequelize.permission = require("../Models/Permissions")(sequelize, Sequelize);
+  sequelize.jabatan = require("../Models/Jabatan")(sequelize, Sequelize);
+  sequelize.role = require("../Models/Role")(sequelize, Sequelize);
+  sequelize.BlacklistToken = require("../Models/BlacklistToken")(sequelize, Sequelize);
+  sequelize.Document = require("../Models/Document")(sequelize, Sequelize);
+  sequelize.RolePermission = require("../Models/Role_Permission")(sequelize, Sequelize);
+
+  sequelize.permission.belongsToMany(sequelize.role,{ as: 'Role', through: sequelize.RolePermission })
+  sequelize.role.belongsToMany(sequelize.permission,{ as: 'Permission', through: sequelize.RolePermission })
+  // sequelize.permission.belongsTo(sequelize.role)
+  // sequelize.role.hasMany(sequelize.permission)
+  sequelize.role.belongsTo(sequelize.users)
+  sequelize.users.hasMany(sequelize.role)
+  sequelize.jabatan.hasMany(sequelize.users)
+  sequelize.users.belongsTo(sequelize.jabatan)
+  sequelize.Document.belongsTo(sequelize.users, {foreignKey: 'created_by'})
+  sequelize.users.hasMany(sequelize.Document, {foreignKey: 'created_by'})
+
+  module.exports = {
+    // db: db,
+    sequelize:sequelize
 };

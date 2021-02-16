@@ -4,21 +4,23 @@ import '../App.css';
 import Axios from 'axios';
 import {Link} from 'react-router-dom';
 import { Redirect } from "react-router-dom";
+import auth from "../controller/auth";
+import { useHistory } from "react-router-dom";
 // redirect = () => {
 //   window.location.href = 'http://localhost:3001/api/login-sso';
 //   // maybe can add spinner while loading
 //   return null;
 // }
-function Register() {
 
+function Login() {
   // let state = { redirect: null };
   const [email,setEmail] = useState("");
   const [userPassword,setUserPassword] = useState("");
   const [loginStatus, setLoginStatus] = useState("");
-  
+  let history = useHistory();
   Axios.defaults.withCredentials = true;
 
-  const loginUser=()=>{
+  const loginUser=props=>{
     Axios.post('http://localhost:3001/api/loginUser',{
       email:email,
       userPassword:userPassword}).then((response)=>{ 
@@ -28,31 +30,36 @@ function Register() {
         } 
         else {
         setLoginStatus(response.data.session.email);
-        }
+        auth.login(() => {
+          history.push("/dashboard");
+        });
+      }
       });
   };
 
   // useEffect(() => {
   //   Axios.get("http://localhost:3001/api/loginUser").then((response) => {
-  //     if (response.data.loggedIn === true) {
-  //       setLoginStatus(response.data.user[0].role);
-  //     }
+  //   if (response.data.session) {
+  //       setLoginStatus(true);
+  //       console.log(loginStatus,"status")
+  //  }
   //   });
   // }, []);
 
-  // if (loginStatus) {
-  //   // window.location.replace('http://localhost:3001/api/login-sso') // return <Redirect to='http://localhost:3001/api/login-sso'  />
-  //   // fetch("http://localhost:3001/api/login-sso")
-  // }else{
-  //   window.location.replace('http://localhost:3001/api/login-sso').then((response)=>{
-  //     if (response.data.loggedIn === true) {
-  //       window.location.replace('http://localhost:3000/login')
-  //       setLoginStatus(response.data.user[0].role);
-  //     }
-  //   });
-  // }
 
-  //sso-login
+//   if (loginStatus) {
+//     // window.location.replace('http://localhost:3001/api/login-sso') // return <Redirect to='http://localhost:3001/api/login-sso'  />
+//     // fetch("http://localhost:3001/api/login-sso")
+//   }else{
+//     window.location.replace('http://localhost:3001/api/login-sso').then((response)=>{
+//       if (response.data.loggedIn === true) {
+//         window.location.replace('http://localhost:3000/login')
+//         setLoginStatus(response.data.user[0].role);
+//       }
+//     });
+//   }
+
+//   //sso-login
   const loginSSO=()=>{
   if (loginStatus) {
   }else{
@@ -89,5 +96,5 @@ function Register() {
   );
 }
 
-export default Register;
+export default Login;
 // export default render;
