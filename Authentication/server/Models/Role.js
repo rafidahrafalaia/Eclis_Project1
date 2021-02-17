@@ -9,9 +9,18 @@ const Role = sequelize.define("roles", {
     primaryKey:true,
     allowNull: false
   },
-  name: DataTypes.STRING,
-  description: DataTypes.STRING,
-  system_environment: DataTypes.STRING,
+  name: {
+    type:DataTypes.STRING,
+    allowNull: false
+  },
+  description: {
+    type:DataTypes.STRING,
+    allowNull: false
+  },
+  system_environment: {
+    type:DataTypes.STRING,
+    allowNull: false
+  },
   domain_environment: DataTypes.STRING
 });
 return Role;

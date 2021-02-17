@@ -9,8 +9,14 @@ const Users = sequelize.define("users", {
     primaryKey:true,
     allowNull: false
   },
-  username: DataTypes.STRING,
-  email: DataTypes.STRING,
+  username: {
+    type:DataTypes.STRING,
+    allowNull: false
+  },
+  email: {
+    type:DataTypes.STRING,
+    allowNull: false
+  },
   password: DataTypes.STRING(500),
   role: DataTypes.STRING,
   jabatan_fungsional: DataTypes.STRING,

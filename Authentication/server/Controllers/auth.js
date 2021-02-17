@@ -6,6 +6,7 @@ var randtoken = require('rand-token');
 const conn=require("../database/connection")
 let refreshTokens = []
 const db=conn.sequelize;
+const emailValidator = require('deep-email-validator');
 const saltRounds = 10;
 module.exports = {
     register: async (req, res, next) => {
@@ -13,6 +14,7 @@ module.exports = {
             username = req.body.username;
             email = req.body.email;
             password = req.body.userPassword;
+            password2 = req.body.userPassword2;
             role = req.body.role;
             jabatan_fungsional = req.body.jabatan_fungsional;
             jabatan_struktual = req.body.jabatan_struktual;
@@ -21,15 +23,29 @@ module.exports = {
             personal_number = req.body.personal_number;
             blacklist = req.body.blacklist;
             id=uuidv4();
-
-            let result = await db.users.findAndCountAll({
+            const verify=await emailValidator.validate(email)
+            console.log(verify.valid)
+          //  if(!verify.valid) 
+          //  return res.status(400).send({
+          //    message: "failed to create account, email is wrong/blank"
+          //  });
+           var n = email.includes("@");
+          if(!n) 
+          return res.status(400).send({
+            message: "failed to create account, email is wrong/blank"
+          });
+           if(password!==password2)
+              return res.status(400).send({
+                message: "failed to create account, re-confirm password is different"
+              });
+              let result = await db.users.findAndCountAll({
               raw: true,
               where: {
                 email: email
               }
             })
-            if(result.cout>0){
-              res.status(500).send({
+            if(result.count){
+              return res.status(400).send({
                 message: "email already exist"
               });
             }
@@ -72,21 +88,19 @@ module.exports = {
             },
 getLogin: async (req, res, next) => {
     try {
-      const tokenSSO = req.cookies['tokenSSO']
-      // console.log("authtoken1",token)
-      // const token = authHeader && authHeader.split('.')[1]
-        if(tokenSSO){
-        res.send({ loggedIn: true, sessionSSO: tokenSSO });
-        next()
+      // const tokenSSO = req.cookies['tokenSSO']
+        if(req.cookies['tokenSSO']){
+        return res.send({ loggedIn: true, sessionSSO: tokenSSO });
+        // next()
         }
         else if (req.cookies['token']) {
-          console.log("tokennnnnn")
+          // console.log("tokennnnnn")
             var decoded = jwt_decode(req.cookies['token']);
             console.log(decoded);
-            res.send({ loggedIn: true, session: decoded });
+            return res.send({ loggedIn: true, session: decoded });
         } else if(req.cookies['token']==null&&req.cookies['tokenSSO']==null){
-            res.send({ loggedIn: false });
-            console.log('false')
+            return res.send({ loggedIn: false });
+            // console.log('false')
         }
     }catch (error) {
         if (error.isJoi === true) error.status = 422
@@ -98,6 +112,12 @@ getLogin: async (req, res, next) => {
 postLogin: async (req, res, next) => {
     const email = req.body.email;
     const password = req.body.userPassword;
+    let find = await db.users.findAndCountAll({
+      raw: true,
+      where: {
+        email: email
+      }
+    })
     db.users.findAll({
       where: {
               email: email
@@ -108,13 +128,10 @@ postLogin: async (req, res, next) => {
                  attributes: ['id']
               }, 
              { 
-              model: db.role, 
+              model: db.role, as: "Role",
               include: [
                 {
                 model: db.permission, as: "Permission",
-                  // where:{
-                  //   id:"e8af6db5-4b65-496a-815c-5f5c1856ec23"
-                  // }
                 }
               ]
             }
@@ -131,26 +148,19 @@ postLogin: async (req, res, next) => {
             username: users.username,
             email: users.email,
             password: users.password,
-            jabatan:users.jabatans
-            // .map(jabatan => {
-            //   return Object.assign(
-            //     {},
-            //     { 
-            //       jabatanId: jabatan.id,}
-            //     )  })
-            ,
-            role: users.roles
-            .map(roles => {
+            jabatan:users.jabatans,
+            role: users.Role
+            .map(Role => {
 
             //   //tidy up the roles data
               return Object.assign(
                 {},
                 {
-                  roleId: roles.id,
+                  roleId: Role.id,
                   // userId: roles.userId,
                   // name: roles.name,
                   // description: roles.description,
-                  permission:roles.Permission
+                  permission:Role.Permission
                   .map(Permission => {
 
             //         //tidy up the permission data
@@ -171,9 +181,9 @@ postLogin: async (req, res, next) => {
         )
       });
       const result = JSON.parse(JSON.stringify(resObj))
-      console.log(result)
+      console.log(find.count)
     
-          if (result) {
+          if (find.count) {
             bcrypt.compare(password, result[0]["password"], (error, response) => {
               if (response) {
               //   req.session.user = result;
@@ -187,29 +197,29 @@ postLogin: async (req, res, next) => {
                   //  "imgprofile" : result[0].imgprofile,
                 }
                 console.log(userData)
-                const token = jwt.sign(userData,process.env.ACCESS_TOKEN_SECRET,{ expiresIn: '216000s' })
-                const refreshToken = jwt.sign(userData, process.env.REFRESH_TOKEN_SECRET,{ expiresIn: '218000s' })
-                refreshTokens.push(refreshToken)
+                const token = jwt.sign(userData,process.env.ACCESS_TOKEN_SECRET,{ expiresIn: '6h' })
+                const refreshToken = jwt.sign(userData, process.env.REFRESH_TOKEN_SECRET,{ expiresIn: '8h' })
+                // refreshTokens.push(refreshToken)
                 if (token == null) return res.sendStatus(401)
               //   console.log(req.session.user);
                 console.log({ message: "LoggedIn" });
              
                 res.cookie('token', token, {
-                  maxAge: 21600 * 1000,
+                  // maxAge: 21600 * 1000,
                   httpOnly: true
                 });
                 res.cookie('refreshToken', refreshToken, {
-                  maxAge: 21800 * 1000,
+                  // maxAge: 21800 * 1000,
                   httpOnly: true
                 });            
               //   console.log(req.cookies['token'])  
-                res.send({session:userData,token:token,refreshToken:refreshToken})
+                return res.send({session:userData,token:token,refreshToken:refreshToken})
               } else {
-                res.send({ message: "Wrong email/password combination!" });
+                return res.send({ message: "Wrong email/password combination!" });
               }
             });
           } else {
-            res.send({ message: "User doesn't exist" });
+            return res.send({ message: "User doesn't exist" });
           }
     });
     // const { count, rows } = await db.users.findAndCountAll({
@@ -273,38 +283,6 @@ delete: async (req, res, next) => {
     const token = req.cookies['token']
     const refreshToken = req.cookies['refreshToken']
     console.log(token)
-    const insertBlacklistToken = {
-      token: token,
-      id:uuidv4()
-      };
-    const insertBlacklistRefresh = {
-      token: refreshToken,
-      id:uuidv4()
-      };
-  
-    // Save register in the database
-    db.BlacklistToken.create(insertBlacklistToken)
-    .then({
-      // console.log(data);
-      // res.cookie("token", "", { expires: new Date() });
-    })
-    .catch(err => {
-      // res.send({
-      //   message:
-      //     err.message || "Some error occurred while creating the Tutorial."
-      // });
-    });
-    db.BlacklistToken.create(insertBlacklistRefresh)
-      .then({
-        // console.log(data);
-        // res.cookie("refreshToken", "", { expires: new Date() });
-      })
-      .catch(err => {
-        // res.send({
-        //   message:
-        //     err.message || "Some error occurred while creating the Tutorial."
-        // });
-      });
       res.clearCookie('token', {
         path: '/'
       });

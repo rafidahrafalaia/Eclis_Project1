@@ -4,6 +4,7 @@ const newToken = require('../Controllers/auth')
 // const config = require('./config')
 const conn=require("../database/connection")
 const db=conn.sequelize;
+const { v4: uuidv4 } = require('uuid');
 const jwt_decode = require('jwt-decode');
 const e = require('express');
 module.exports= {
@@ -13,38 +14,160 @@ module.exports= {
     const tokenSSO = req.cookies['tokenSSO']
     console.log("authtoken1",token)
     // const token = authHeader && authHeader.split('.')[1]
-    if(tokenSSO){
-      // res.send({ loggedIn: true, sessionSSO: tokenSSO });
+    if(tokenSSO){ 
+      jwt.verify(tokenSSO, process.env.ACCESS_TOKEN_SECRET, (err, user)=>{
+      // console.log("lwt")
+      if(err){
+        console.log("err")
+        // newToken.token
+        const refreshToken = req.cookies['refreshToken']
+        var decoded = jwt_decode(tokenSSO);
+        console.log(decoded)
+        const userData = {
+           "session" : decoded.session,
+          //  "username" : decoded.username,
+          //  "email" : decoded.email,
+          //  "role" : decoded.role,
+          // //  "permission" : result[0].permission,
+          //  "jabatan" : decoded.jabatan,
+          //  "imgprofile" : result[0].imgprofile,
+        }
+        const insertBlacklistToken = {
+          token: token,
+          id:uuidv4()
+          };
+        // Save register in the database
+        db.BlacklistToken.create(insertBlacklistToken)
+        .then({
+          // console.log(data);
+          // res.cookie("token", "", { expires: new Date() });
+        })
+        .catch(err => {
+          return res.send({
+            message:
+              err.message || "Some error occurred while creating the Tutorial."
+          });
+        });
+        if (refreshToken == null) return res.sendStatus(401)
+        // if (!refreshToken.includes(refreshToken)) return res.sendStatus(403)
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+        if (err) {   
+          const insertBlacklistRefresh = {
+            token: refreshToken,
+            id:uuidv4()
+            };
+          db.BlacklistToken.create(insertBlacklistRefresh)
+          .then({
+            // console.log(data);
+            // res.cookie("refreshToken", "", { expires: new Date() });
+          })
+          .catch(err => {
+            return res.send({
+              message:
+                err.message || "Some error occurred while creating the Tutorial."
+            });
+          });
+          return res.sendStatus(403)
+        }
+        
+        const accessToken = jwt.sign(userData, process.env.ACCESS_TOKEN_SECRET,{ expiresIn: '6h' })
+        const newRefreshToken = jwt.sign(userData,process.env.REFRESH_TOKEN_SECRET,{ expiresIn: '8h' })
+        res.cookie('tokenSSO', accessToken, {
+          // maxAge: 21600 * 1000,
+          httpOnly: true
+        });
+        res.cookie('refreshToken', newRefreshToken, {
+          // maxAge: 21800 * 1000,
+          httpOnly: true
+        });
+        // return res.json({ accessToken: accessToken,refreshToken:newRefreshToken })
+        })
+        // next()
+      } 
+      else{
+      req.user = user
+      console.log("next")
+      // var decoded = jwt_decode(req.cookies['token']);
+      // console.log(decoded);
+      //  next()
+      }
       next()
+    })
+      // next()
     }
     else if(token==null&&refreshToken==null&&tokenSSO==null) return res.send({ message: "Hasn't LoggedIn Yet!!" })
     // else if(token) {
     //   // res.send({message:"newToken"})
     // newToken.token
     // }
-    console.log(token,"cek")
+    // console.log(token,"cek")
+    else if(token){
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user)=>{
       // console.log("lwt")
       if(err){
         console.log("err")
-        newToken.token
+        // newToken.token
         const refreshToken = req.cookies['refreshToken']
         var decoded = jwt_decode(refreshToken);
+        console.log(decoded)
+        const userData = {
+           "id" : decoded.id,
+           "username" : decoded.username,
+           "email" : decoded.email,
+           "role" : decoded.role,
+          //  "permission" : result[0].permission,
+           "jabatan" : decoded.jabatan,
+          //  "imgprofile" : result[0].imgprofile,
+        }
+        const insertBlacklistToken = {
+          token: token,
+          id:uuidv4()
+          };
+        // Save register in the database
+        db.BlacklistToken.create(insertBlacklistToken)
+        .then({
+          // console.log(data);
+          // res.cookie("token", "", { expires: new Date() });
+        })
+        .catch(err => {
+          return res.send({
+            message:
+              err.message || "Some error occurred while creating the Tutorial."
+          });
+        });
         if (refreshToken == null) return res.sendStatus(401)
         // if (!refreshToken.includes(refreshToken)) return res.sendStatus(403)
         jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403)
-        const accessToken = jwt.sign(decoded, process.env.ACCESS_TOKEN_SECRET)
-        const newRefreshToken = jwt.sign(decoded,process.env.REFRESH_TOKEN_SECRET)
+        if (err) {   
+          const insertBlacklistRefresh = {
+            token: refreshToken,
+            id:uuidv4()
+            };
+          db.BlacklistToken.create(insertBlacklistRefresh)
+          .then({
+            // console.log(data);
+            // res.cookie("refreshToken", "", { expires: new Date() });
+          })
+          .catch(err => {
+            return res.send({
+              message:
+                err.message || "Some error occurred while creating the Tutorial."
+            });
+          });
+          return res.sendStatus(403)
+        }
+        
+        const accessToken = jwt.sign(userData, process.env.ACCESS_TOKEN_SECRET,{ expiresIn: '6h' })
+        const newRefreshToken = jwt.sign(userData,process.env.REFRESH_TOKEN_SECRET,{ expiresIn: '8h' })
         res.cookie('token', accessToken, {
-          maxAge: 21600 * 1000,
+          // maxAge: 21600 * 1000,
           httpOnly: true
         });
         res.cookie('refreshToken', newRefreshToken, {
-          maxAge: 21800 * 1000,
+          // maxAge: 21800 * 1000,
           httpOnly: true
         });
-        // res.json({ accessToken: accessToken,refreshToken:newRefreshToken })
+        // return res.json({ accessToken: accessToken,refreshToken:newRefreshToken })
         })
         // next()
       } 
@@ -58,6 +181,7 @@ module.exports= {
       }
       next()
     })
+  }
   },
   authenticateBlacklist:async(req, res, next)=>{
     const tokenSSO = req.cookies['tokenSSO']
@@ -113,7 +237,7 @@ module.exports= {
           // }
         },
         {
-          model: db.role, 
+          model: db.role, as: "Role",
           include: [
             {
             model: db.permission, as: "Permission",
@@ -135,20 +259,20 @@ module.exports= {
             userId: users.id,
             email: users.email,
             password: users.password,
-            jabatan:users.jabatans,
-            role: users.roles
-            .map(roles => {
+            jabatan:users.jabatan,
+            role: users.Role
+            .map(Role => {
 
             //   //tidy up the roles data
               return Object.assign(
                 {},
                 {
-                  roleId: roles.id,
-                  userId: roles.userId,
-                  name: roles.name,
-                  system:roles.system_environment,
-                  description: roles.description, 
-                  permission:roles.Permission
+                  roleId: Role.id,
+                  userId: Role.userId,
+                  name: Role.name,
+                  system:Role.system_environment,
+                  description: Role.description, 
+                  permission:Role.Permission
                   .map(Permission => {
 
             //         //tidy up the permission data
@@ -177,7 +301,7 @@ module.exports= {
         while(j--){
           console.log(j)
           if (resObj[0].role[i].permission[j].permissionId.includes('63c0b55c-dcf8-4882-86e2-6e50017f4e25')) {
-            res.json(resObj)
+            // res.json(resObj)
             permission=true;
             next()
           }
@@ -191,7 +315,7 @@ module.exports= {
       // }
       // else{
       if(permission===false)
-        res.send({message:"wrong roles/permission"})
+        return res.send({message:"wrong roles/permission"})
       // }
     });
   }
@@ -217,7 +341,7 @@ catch (error) {
             // }
           },
           {
-            model: db.role, 
+            model: db.role, as: "Role",
             include: [
               {
               model: db.permission, as: "Permission",
@@ -239,20 +363,20 @@ catch (error) {
               userId: users.id,
               email: users.email,
               password: users.password,
-              jabatan:users.jabatans,
-              role: users.roles
-              .map(roles => {
+              jabatan:users.jabatan,
+              role: users.Role
+              .map(Role => {
   
               //   //tidy up the roles data
                 return Object.assign(
                   {},
                   {
-                    roleId: roles.id,
-                    userId: roles.userId,
-                    name: roles.name,
-                    system:roles.system_environment,
-                    description: roles.description, 
-                    permission:roles.Permission
+                    roleId: Role.id,
+                    userId: Role.userId,
+                    name: Role.name,
+                    system:Role.system_environment,
+                    description: Role.description, 
+                    permission:Role.Permission
                     .map(Permission => {
   
               //         //tidy up the permission data

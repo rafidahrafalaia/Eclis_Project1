@@ -2,8 +2,9 @@ POST http://localhost:3001/api/register
 Content-Type: application/json
 
 {
-   "email":"user@test.com",
-   "userPassword":"1234"
+   "email":"user123@gmail.com",
+   "userPassword":"1234",
+   "userPassword2":"1234"
 }
 ###
 
@@ -16,10 +17,21 @@ Content-Type: application/json
 } 
 
 ###
-GET  http://localhost:3001/api/testGet
+
+POST http://localhost:3001/api/createUserRole
 Content-Type: application/json
 
 {
+   "user_id":"e9e1d409-4e04-48f1-8336-721a4a85524b",
+   "role_id":"dd188417-9b8f-46f4-ba2a-f36cda5e5d3f"
+} 
+
+###
+GET  http://localhost:3001/api/searchJabatan
+Content-Type: application/json
+
+{
+   "id":"c13111a4-efcd-4706-9768-17a4f74de703"
 } 
 
 ###
@@ -33,7 +45,7 @@ Content-Type: application/json
 } 
 ###
 
-POST  http://localhost:3001/api/logout
+DELETE  http://localhost:3001/api/logout
 Content-Type: application/json
 
 {
@@ -41,11 +53,32 @@ Content-Type: application/json
 } 
 //CRUD
 ###
+GET  http://localhost:3001/api/searchUser
+Content-Type: application/json
+
+{
+   "id":"215f800e-6bf4-4a2a-9fdf-33039b2d7f2c"
+} 
+###
+GET  http://localhost:3001/api/readJabatan
+Content-Type: application/json
+
+{
+   "page":1
+} 
+###
+GET  http://localhost:3001/api/readPermission
+Content-Type: application/json
+
+{
+
+} 
+###
 POST  http://localhost:3001/api/createRoles
 Content-Type: application/json
 
 {
-  "name":"Almighty7",
+  "name":"Almighty999",
   "description":"Grant Almighty Power, use it wisely"
 
 } 
@@ -54,10 +87,8 @@ POST  http://localhost:3001/api/createPermission
 Content-Type: application/json
 
 {
-  "role_id":"dd188417-9b8f-46f4-ba2a-f36cda5e5d3f",
-  "name":"CRUD Document",
+  "name":"CRUD Documentxxxx",
   "description":"admin-crud_doc"
-
 } 
 ###
 POST  http://localhost:3001/api/createDocument
@@ -72,35 +103,42 @@ POST  http://localhost:3001/api/createRolePerm
 Content-Type: application/json
 
 {
-   "role_id":"6860040e-24e7-428d-a67b-8dfd103e290d",
-   "permission_id":"63c0b55c-dcf8-4882-86e2-6e50017f4e25"
+   "role_id":"dd188417-9b8f-46f4-ba2a-f36cda5e5d3f",
+   "permission_id":"a0bcdd06-e8f6-43a8-984a-0471296a56d0"
+} 
+###
+GET  http://localhost:3001/api/readJabatan
+Content-Type: application/json
+
+{
+  
 } 
 ###
 POST  http://localhost:3001/api/createJabatan
 Content-Type: application/json
 
 {
-   "name":"Admin",
-   "root_parent_id":"a25e8b94-c98a-438f-acfd-6688c2291d0f",
-   "user_id":"a25e8b94-c98a-438f-acfd-6688c2291d0f"
+   "name":"AdminDcccD",
+   "user_id":"e9e1d409-4e04-48f1-8336-721a4a85524b"
 } 
 ###
-GET  http://localhost:3001/api/readAll
+DELETE  http://localhost:3001/api/deleteJabatan
 Content-Type: application/json
 
 {
-
+   "id":"8542fd1d-b36b-4d17-9ce5-a8d714db87b9"
 } 
 ###
-POST  http://localhost:3001/api/searchRoles
+DELETE  http://localhost:3001/api/deleteRoles
 Content-Type: application/json
 
 {
  "id":"dd188417-9b8f-46f4-ba2a-f36cda5e5d3f"
 } 
 ###
-POST  http://localhost:3001/api/readRoles
+DELETE  http://localhost:3001/api/deletePermission
 Content-Type: application/json
 
 {
+ "id":"30a6cdaf-c761-43b4-870e-8d125b0b03d0"
 } 

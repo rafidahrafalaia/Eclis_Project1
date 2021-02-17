@@ -14,9 +14,15 @@ const Jabatan = sequelize.define("jabatans", {
     primaryKey:true
   },
   parent_id: DataTypes.STRING,
-  name: DataTypes.STRING,
+  name: {
+    type:DataTypes.STRING,
+    allowNull: false
+  },
   description: DataTypes.STRING,
-  level: DataTypes.STRING,
+  level: {
+    type:DataTypes.STRING,
+    allowNull: false
+  },
 //   domain_environment: DataTypes.STRING,
 //   jabatan: DataTypes.STRING,
 //   permission: DataTypes.STRING

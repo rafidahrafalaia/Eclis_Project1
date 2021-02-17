@@ -1,26 +1,28 @@
 const bcrypt = require("bcrypt");
 const conn=require("../database/connection")
 const db=conn.sequelize;
-const jwt_decode = require('jwt-decode');
-// const Permissions=conn.permission;
-// const Jabatan=conn.jabatan;
-// const Roles=conn.role;
+// const jwt_decode = require('jwt-decode');
 const saltRounds = 10;
-// const { Sequelize, Model, DataTypes } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 const Role_Permission = require("../Models/Role_Permission");
 // const sequelize = new Sequelize('mariadb');
-
 const Sequelize = require("sequelize");
+
 module.exports = {
   //CRUD User
   ReadUsersROlePermission: async (req, res, next) => {
     try { 
         const users = await db.users.findAll( 
         {  
+          attributes:[
+            'username', 'email',
+            [Sequelize.fn('count', Sequelize.col('Role.id')) ,'RoleCount'],
+            [Sequelize.fn('count', Sequelize.col('jabatan.id')) ,'JabatanCount']
+           
+        ],
           include: [
             {
-              model: db.role,
+              model: db.role, as: "Role",
               attributes: ['id'],
               include: [
                 {
@@ -35,7 +37,8 @@ module.exports = {
       
         page_number=req.body.page;
         page_size=2;
-        if(result){
+        // console.log(users.count)
+        if(users){
          return res.json(users.slice((page_number - 1) * page_size, page_number * page_size))
      }
       // console.log(users.every(user => user instanceof db.users));
@@ -85,26 +88,16 @@ module.exports = {
         next(error)
         }
       },
-      ReadUsers: async (req, res, next) => {
+  ReadUsers: async (req, res, next) => {
         try { 
-          // username = req.body.username;
-          // email = req.body.email;
-          // password = req.body.password;
-          // role = req.body.role;
-          // jabatan_fungsional = req.body.jabatan_fungsional;
-          // jabatan_struktual = req.body.jabatan_struktual;
-          // avatar = req.body.avatar;
-          // office_number = req.body.office_number;
-          // personal_number = req.body.personal_number;
-          // blacklist = req.body.blacklist;
           id = req.body.id;
               
           let result = await db.users.findAll({
             // raw: true,
             attributes:[
               'username', 'email',
-              [Sequelize.fn('count', Sequelize.col('roles.id')) ,'RoleCount'],
-              // [Sequelize.fn('count', Sequelize.col('roles.id')) ,'JabatanCount']
+              [Sequelize.fn('count', Sequelize.col('Role.id')) ,'RoleCount'],
+              [Sequelize.fn('count', Sequelize.col('jabatan.id')) ,'JabatanCount']
              
           ],
             
@@ -112,7 +105,7 @@ module.exports = {
           // offset: 1,
           include: [
             {
-              model: db.role,
+              model: db.role, as: "Role",
               attributes: []
             },
             {
@@ -136,37 +129,90 @@ module.exports = {
           next(error)
           }
         },
-        SearchUsers: async (req, res, next) => {
-          try { 
-            // username = req.body.username;
-            // email = req.body.email;
-            // password = req.body.password;
-            // role = req.body.role;
-            // jabatan_fungsional = req.body.jabatan_fungsional;
-            // jabatan_struktual = req.body.jabatan_struktual;
-            // avatar = req.body.avatar;
-            // office_number = req.body.office_number;
-            // personal_number = req.body.personal_number;
-            // blacklist = req.body.blacklist;
-            id = req.body.id;
+  SearchUsers: async (req, res, next) => {
+   try { 
+      id = req.body.id;
                 
-            let result = await db.users.findAndCountAll({
-              raw: true,
-              where: {
-                id: id
-              }
-            })
-                
-            if(result.count){
-             return res.json(result.rows[0])
-          }
-        }catch (error) {
-          if (error.isJoi === true) error.status = 422
-            next(error)
-            }
+    db.users.findAll({
+      where: {
+              id: id
           },
-      UpdateUsers: async (req, res, next) => {
+      include: [
+        {
+        model: db.jabatan,
+        attributes: ['id']
+          // where:{
+          //   id:"e8af6db5-4b65-496a-815c-5f5c1856ec23"
+          // }
+        },
+        {
+          model: db.role, as: "Role",
+          include: [
+            {
+            model: db.permission, as: "Permission",
+              // where:{
+              //   id:"e8af6db5-4b65-496a-815c-5f5c1856ec23"
+              // }
+            }
+          ]
+        }
+      ]
+    }).then(
+      users => {
+      const resObj = users.map(users => {
+
+        //tidy up the user data
+        return Object.assign(
+          {},
+          {
+            userId: users.id,
+            email: users.email,
+            password: users.password,
+            jabatan:users.jabatan,
+            role: users.Role
+            .map(Role => {
+
+            //   //tidy up the roles data
+              return Object.assign(
+                {},
+                {
+                  roleId: Role.id,
+                  userId: Role.userId,
+                  name: Role.name,
+                  system:Role.system_environment,
+                  description: Role.description, 
+                  permission:Role.Permission
+                  .map(Permission => {
+
+            //         //tidy up the permission data
+                    return Object.assign(
+                      {},
+                      {
+                        permissionId: Permission.id,
+                        // roleId: permissions.roleId,
+                        // name: permissions.name,
+                        // description: permissions.description
+                      }
+                    )
+                  })
+                }
+                )
+            })
+          }
+        )
+      });   
+      if(resObj){
+        return res.json(resObj[0])
+       }
+    });
+      }catch (error) {
+        if (error.isJoi === true) error.status = 422
+          next(error)
+          }
+        },
+  UpdateUsers: async (req, res, next) => {
           try { 
+            id = req.body.id;
             username = req.body.username;
             email = req.body.email;
             password = req.body.password;
@@ -176,16 +222,17 @@ module.exports = {
             avatar = req.body.avatar;
             office_number = req.body.office_number;
             personal_number = req.body.personal_number;
+            jabatanId = req.body.jabatanId;
             blacklist = req.body.blacklist;
                 
             let result = await db.users.findAndCountAll({
               raw: true,
               where: {
-                email: email
+                id: id
               }
             })
                 
-            if(result.count){
+            if(result.count&&password){
               bcrypt.hash(password, saltRounds, (err, hash) => {
               if (err) {
                 console.log(err);
@@ -200,17 +247,40 @@ module.exports = {
                 avatar: avatar,
                 office_number: office_number,
                 personal_number: personal_number,
-                blacklist:blacklist
+                blacklist:blacklist,
+                jabatanId:jabatanId
               };
               // console.log(update)
 
               db.users.update(
                 update,{ 
                   where: { 
-                    email: email 
+                    id: id 
                 } 
               })    
             });
+          }
+          else if(result.count){
+            const update = {
+              email: email,
+              username:username,
+              role: role,
+              jabatan_fungsional: jabatan_fungsional,
+              jabatan_struktual: jabatan_struktual,
+              avatar: avatar,
+              office_number: office_number,
+              personal_number: personal_number,
+              blacklist:blacklist,
+              jabatanId:jabatanId
+            };
+            // console.log(update)
+
+            db.users.update(
+              update,{ 
+                where: { 
+                  id: id 
+              } 
+            })    
           }
         }catch (error) {
           if (error.isJoi === true) error.status = 422
@@ -223,6 +293,7 @@ module.exports = {
               email = req.body.email;
               password = req.body.password;
               role = req.body.role;
+              jabatanId = req.body.jabatanId;
               jabatan_fungsional = req.body.jabatan_fungsional;
               jabatan_struktual = req.body.jabatan_struktual;
               avatar = req.body.avatar;
@@ -242,7 +313,8 @@ module.exports = {
                 avatar: avatar,
                 office_number: office_number,
                 personal_number: personal_number,
-                blacklist:blacklist
+                blacklist:blacklist,
+                jabatanId:jabatanId
               };
               
               db.users.create(createUser)
@@ -262,16 +334,6 @@ module.exports = {
   DeleteUsers: async (req, res, next) => {
     try { 
           id = req.body.id;
-          username = req.body.username;
-          email = req.body.email;
-          password = req.body.password;
-          role = req.body.role;
-          jabatan_fungsional = req.body.jabatan_fungsional;
-          jabatan_struktual = req.body.jabatan_struktual;
-          avatar = req.body.avatar;
-          office_number = req.body.office_number;
-          personal_number = req.body.personal_number;
-          blacklist = req.body.blacklist;
                     
           db.users.destroy({
             where: {
@@ -298,7 +360,7 @@ module.exports = {
               
           let result = await db.jabatan.findAll({
             // raw: true,
-            attributes: ['name', 'parent_id',
+            attributes: ['id','name', 'parent_id',
             [Sequelize.fn('count', Sequelize.col('users.id')) ,'UserCount'] 
           ],
             include: [
@@ -319,7 +381,7 @@ module.exports = {
           page_size=2;
           if(result){
            return res.json(result.slice((page_number - 1) * page_size, page_number * page_size))
-       }
+      }
       }catch (error) {
         if (error.isJoi === true) error.status = 422
           next(error)
@@ -330,7 +392,14 @@ module.exports = {
             id = req.body.id;
                 
             let result = await db.jabatan.findAndCountAll({
-              raw: true,
+              // raw: true,
+              include: [
+                {
+                  model: db.users,
+                  attributes: ['id'] 
+                }
+                  
+              ],
               where: {
                 id: id
               }
@@ -377,7 +446,7 @@ module.exports = {
       next(error)
       }
     },
-    UpdateJabatan: async (req, res, next) => {
+  UpdateJabatan: async (req, res, next) => {
       try { 
         id = req.body.id,
         userId = req.body.user_id;
@@ -419,10 +488,7 @@ module.exports = {
   DeleteJabatan: async (req, res, next) => {
     try { 
       id = req.body.id;
-      nameJabatan = req.body.name;
-      description = req.body.description;
-      level = req.body.level;
-                
+
       db.jabatan.destroy({
         where: {
           id:id
@@ -448,11 +514,16 @@ module.exports = {
           
       let result = await db.role.findAll({
         attributes: ['name', 'system_environment',
-        [Sequelize.fn('count', Sequelize.col('Permission.id')) ,'PermissionCount'] 
+        [Sequelize.fn('count', Sequelize.col('Permission.id')) ,'PermissionCount'],
+        [Sequelize.fn('count', Sequelize.col('User.id')) ,'UserCount'], 
       ],
         include: [
           {
             model: db.permission, as: "Permission",
+            attributes: [] 
+          },
+          {
+            model: db.users, as: "User",
             attributes: [] 
           }
             
@@ -475,30 +546,75 @@ module.exports = {
       next(error)
       }
     },
-    SearchRoles: async (req, res, next) => {
+  SearchRoles: async (req, res, next) => {
       try { 
         id = req.body.id;
             
-        let result = await db.role.findAndCountAll({
+        // let result = 
+        await db.role.findAll({
           include: [
             {
-              model: db.permission, as: "Permission"
+              model: db.permission, as: "Permission",
+              attributes:['id']
+            },
+            {
+              model: db.users, as: "User",
+              attributes:['id']
             }
           ],
           where: {
             id: id
           }
-        })
+        }).then(
+          role => {
+          const resObj = role.map(role => {
+    
+            //tidy up the user data
+            return Object.assign(
+              {},
+              {
+                rolesid: role.id,
+                name: role.name,
+                system: role.system_environment,
+                permission: role.Permission
+                .map(Permission => {
+    
+                //   //tidy up the roles data
+                  return Object.assign(
+                    {},
+                    {
+                      permissionId: Permission.id
+                    }
+                    )
+                }),
+                user: role.User
+                .map(User => {
+    
+                //   //tidy up the roles data
+                  return Object.assign(
+                    {},
+                    {
+                      userId: User.id
+                    }
+                    )
+                })
+              }
+            )
+          });   
+          if(resObj){
+            return res.json(resObj[0])
+           }
+        });
             
-        if(result.count){
-         return res.json(result.rows[0])
-      }
+      //   if(result.count){
+      //    return res.json(result.rows[0])
+      // }
     }catch (error) {
       if (error.isJoi === true) error.status = 422
         next(error)
         }
       },
-    CreateRoles: async (req, res, next) => {
+  CreateRoles: async (req, res, next) => {
       try { 
         id = uuidv4();
         userId = req.body.user_id;
@@ -532,7 +648,7 @@ module.exports = {
         next(error)
         }
       },
-    UpdateRoles: async (req, res, next) => {
+  UpdateRoles: async (req, res, next) => {
       try { 
         id = req.body.id;
         userId = req.body.user_id;
@@ -573,10 +689,6 @@ module.exports = {
   DeleteRoles: async (req, res, next) => {
     try { 
       id = req.body.id;
-      nameRoles = req.body.name;
-      description = req.body.description;
-      system_environment = req.body.system_environment;
-      domain_environment = req.body.domain_environment;
                 
       db.role.destroy({
         where: {
@@ -632,12 +744,13 @@ module.exports = {
       next(error)
       }
     },
-    SearchPermission: async (req, res, next) => {
+  SearchPermission: async (req, res, next) => {
       try { 
         id = req.body.id;
             
-        let result = await db.permission.findAndCountAll({
-          raw: true, 
+        // let result = 
+        await db.permission.findAll({
+          // raw: true, 
           include: [
             {
               model: db.role, as: "Role"
@@ -646,11 +759,58 @@ module.exports = {
           where: {
             id: id
           }
-        })
+        }).then(
+          permission => {
+          const resObj = permission.map(permission => {
+    
+            //tidy up the user data
+            return Object.assign(
+              {},
+              {
+                permissionId: permission.id,
+                name: permission.name,
+                description: permission.description,
+                // jabatan:users.jabatan,
+                role: permission.Role
+                .map(Role => {
+    
+                //   //tidy up the roles data
+                  return Object.assign(
+                    {},
+                    {
+                      roleId: Role.id,
+                //       userId: Role.userId,
+                //       name: Role.name,
+                //       system:Role.system_environment,
+                //       description: Role.description, 
+                //       permission:Role.Permission
+                //       .map(Permission => {
+    
+                // //         //tidy up the permission data
+                //         return Object.assign(
+                //           {},
+                //           {
+                //             permissionId: Permission.id,
+                //             // roleId: permissions.roleId,
+                //             // name: permissions.name,
+                //             // description: permissions.description
+                //           }
+                //         )
+                //       })
+                    }
+                    )
+                })
+              }
+            )
+          });   
+          if(resObj){
+            return res.json(resObj[0])
+           }
+        });
             
-        if(result.count){
-         return res.json(result.rows[0])
-      }
+      //   if(result.count){
+      //    return res.json(result.rows[0])
+      // }
     }catch (error) {
       if (error.isJoi === true) error.status = 422
         next(error)
@@ -678,17 +838,17 @@ module.exports = {
         .then(data => {
           res.send(data);
         }).catch(err => {
-        //   res.status(500).send({
-        //   message:
-        //     err.message || "Some error occurred while creating roles"
-        // });
+          return res.status(500).send({
+          message:
+            err.message || "Some error occurred while creating roles"
+        });
       });        
     }catch (error) {
       if (error.isJoi === true) error.status = 422
       next(error)
       }
     },
-    UpdatePermissions: async (req, res, next) => {
+  UpdatePermissions: async (req, res, next) => {
       try { 
         id = req.body.id;
         namePermission = req.body.name;
@@ -729,11 +889,7 @@ module.exports = {
   DeletePermissions: async (req, res, next) => {
     try { 
       id = req.body.id;
-      namePermission = req.body.name;
-      description = req.body.description;
-      system_environment = req.body.system_environment;
-      domain_environment = req.body.domain_environment;
-                
+
       db.permission.destroy({
         where: {
           id:id
@@ -752,8 +908,8 @@ module.exports = {
       next(error)
     }
   },
-  // //CRUD Permission
-    SearchRolePermission: async (req, res, next) => {
+  // //CRUD RolePermission
+  SearchRolePermission: async (req, res, next) => {
       try { 
         role_id = req.body.role_id;
         permission_id = req.body.permission_id;
@@ -802,7 +958,7 @@ module.exports = {
       permission_id = req.body.permission_id;
       const role= await db.role.findByPk(role_id);
      
-
+      console.log(role)
       const permission=await db.permission.findByPk(permission_id);
       await permission.addRole(role);
       const permissionAll=await db.permission.findAll({
@@ -819,7 +975,7 @@ module.exports = {
           permissionId:permission_id
         }
       })
-      res.json(RolePermission)
+      return res.json(RolePermission)
       // const permission=db.permission.findAll({
       //   where: {
       //     id: permissionId
@@ -849,7 +1005,7 @@ module.exports = {
       next(error)
       }
     },
-    UpdateRolePermission: async (req, res, next) => {
+  UpdateRolePermission: async (req, res, next) => {
       try { 
       role_id = req.body.role_id;
       permission_id = req.body.permission_id; 
@@ -880,6 +1036,149 @@ module.exports = {
         where: {
           roleId:role_id,
           permissionId:permission_id
+          }
+      }).then(data =>{
+        return res.send({message:"delete successfull"})
+      }
+      ).catch(err => {
+        return res.status(500).send({
+        message:
+          err.message || "Some error occurred while delete RolePermission"
+        });
+      });        
+    }catch (error) {
+      if (error.isJoi === true) error.status = 422
+      next(error)
+    }
+  },
+  // //CRUD UserRole
+  SearchUserRole: async (req, res, next) => {
+      try { 
+        role_id = req.body.role_id;
+        user_id = req.body.user_id;
+        
+        let result =  db.UserRole.findAll({
+          where:{
+            roleId:role_id,
+            userId:user_id
+          }
+        })
+            
+        if(result.count){
+         return res.json(result.rows[0])
+      }
+    }catch (error) {
+      if (error.isJoi === true) error.status = 422
+        next(error)
+        }
+      },
+  ReadUserRole: async (req, res, next) => {
+        try { 
+          role_id = req.body.role_id;
+          user_id = req.body.user_id;
+          
+          let result =  db.UserRole.findAll({
+            // where:{
+            //   roleId:role_id,
+            //   permissionId:permission_id
+            // }
+          })
+              
+          page_number=req.body.page;
+          page_size=2;
+          if(result){
+           return res.json(result.slice((page_number - 1) * page_size, page_number * page_size))
+       }
+      }catch (error) {
+        if (error.isJoi === true) error.status = 422
+          next(error)
+          }
+        },
+  CreateUserRole: async (req, res, next) => {
+    try { 
+      id = uuidv4();
+      role_id = req.body.role_id;
+      user_id = req.body.user_id;
+      const role= await db.role.findByPk(role_id);
+     
+
+      const user=await db.users.findByPk(user_id);
+      await user.addRole(role);
+      const userAll=await db.users.findAll({
+        include: [
+          {
+            model: db.role, as: "Role"
+          }
+        ]
+      });
+      // console.log(permissionAll);
+      const UserRole=await db.UserRole.findAll({
+        where:{
+          roleId:role_id,
+          userId:user_id
+        }
+      })
+      res.json(UserRole)
+      // const permission=db.permission.findAll({
+      //   where: {
+      //     id: permissionId
+      //   }
+      // });
+      // await role.addpermission(permission, { roleId: roleId, permissionId: permissionId }); 
+      // const CreatePermissions = {
+      //   id:id,
+      //   roleId: roleId,
+      //   name: namePermission,
+      //   description:description,
+      //   domain_environment: domain_environment,
+      //   system_environment: system_environment
+      // };
+
+      // const createPermission=db.permission.create(CreatePermissions)
+      //   .then(data => {
+      //     res.send(data);
+      //   }).catch(err => {
+      //     res.status(500).send({
+      //     message:
+      //       err.message || "Some error occurred while creating roles"
+      //   });
+      // });        
+    }catch (error) {
+      if (error.isJoi === true) error.status = 422
+      next(error)
+      }
+    },
+  UpdateUserRole: async (req, res, next) => {
+      try { 
+      role_id = req.body.role_id;
+      user_id = req.body.user_id;
+      new_permission_id = req.body.new_permission_id; 
+      new_role_id = req.body.new_role_id; 
+      const update={
+        roleId:new_role_id,
+        userId :user_id
+      }
+      db.UserRole.update(
+        update,{ 
+          where: { 
+          roleId:role_id,
+          userId: user_id
+          } 
+        })    
+      }catch (error) {
+        if (error.isJoi === true) error.status = 422
+        next(error)
+      }
+    },
+  DeleteUserRole: async (req, res, next) => {
+    try { 
+      role_id = req.body.role_id;      
+      user_id = req.body.user_id;
+                
+      db.UserRole.destroy({
+        where: {
+          roleId:role_id,      
+          userId:user_id
           }
       }).then(data =>{
         return res.send({message:"delete successfull"})
@@ -926,7 +1225,7 @@ module.exports = {
       next(error)
       }
     },
-    UpdateDocument: async (req, res, next) => {
+  UpdateDocument: async (req, res, next) => {
       try { 
         id = uuidv4();
         pasal = req.body.pasal;
@@ -963,10 +1262,6 @@ module.exports = {
   DeleteDocument: async (req, res, next) => {
     try { 
       id = req.body.id;
-      // namePermission = req.body.name;
-      // description = req.body.description;
-      // system_environment = req.body.system_environment;
-      // domain_environment = req.body.domain_environment;
                 
       db.Document.destroy({
         where: {

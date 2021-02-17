@@ -9,9 +9,18 @@ const Permissions = sequelize.define("permissions", {
     // defaultValue: uuidv4(),
     primaryKey:true
   },
-  name: DataTypes.STRING,
-  description: DataTypes.STRING,
-  system_environment: DataTypes.STRING,
+  name: {
+    type:DataTypes.STRING,
+    allowNull: false
+  },
+  description:{
+    type:DataTypes.STRING,
+    allowNull: false
+  },
+  system_environment: {
+    type:DataTypes.STRING,
+    allowNull: false
+  },
   domain_environment: DataTypes.STRING,
 //   jabatan: DataTypes.STRING,
 //   permission: DataTypes.STRING

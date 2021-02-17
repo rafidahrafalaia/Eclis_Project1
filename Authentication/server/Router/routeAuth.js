@@ -7,7 +7,7 @@ const app = express();
 router.post('/register', AuthController.register)
 
 router.post('/loginUser',  AuthController.postLogin,AuthToken.authenticateBlacklist)
-router.get('/loginUser',  AuthController.getLogin)
+router.get('/loginUser', AuthToken.authenticateBlacklist,AuthToken.authenticateToken, AuthController.getLogin)
 router.get('/testGet',  AuthToken.authenticateBlacklist, AuthToken.authenticateToken,AuthController.getLogin)
 
 router.post('/token', AuthToken.authenticateBlacklist, AuthToken.authenticateToken, AuthController.token)

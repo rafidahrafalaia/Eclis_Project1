@@ -6,7 +6,8 @@ const BlacklistToken = sequelize.define("blacklist_token", {
     id: {
     type: DataTypes.STRING,
     // defaultValue: uuidv4(),
-    primaryKey:true
+    primaryKey:true, 
+    allowNull: false
   },
   token: DataTypes.STRING(500)
 });
