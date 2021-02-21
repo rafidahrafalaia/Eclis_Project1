@@ -2,7 +2,7 @@ import React,{useEffect,useState} from "react";
 import { Route, Redirect } from "react-router-dom";
 import auth from "./auth";
 import Axios from 'axios';
-import {Link} from 'react-router-dom';
+// import {Link} from 'react-router-dom';
 import { useHistory } from "react-router-dom";
 
 Axios.defaults.withCredentials = true;
@@ -20,7 +20,6 @@ export function ProtectedRoute({
   const [loginStatus, setLoginStatus] = useState(state);
 
   useEffect(() => {
-    // const login=()=>{
     Axios.get("http://localhost:3001/api/loginUser").then((response) => {
       if (response.data.loggedIn === true) {
         console.log("its true login")
@@ -59,9 +58,7 @@ export function ProtectedRoute({
   <Route
     {...rest}
     render={props => {
-      // console.log(login)
       const { data, loading } = loginStatus;
-      // console.log(datasso,"test")
       if(loading) return "loading..."
       else{
       if (data) {

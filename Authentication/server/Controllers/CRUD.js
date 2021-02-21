@@ -1,10 +1,9 @@
 const bcrypt = require("bcrypt");
 const conn=require("../database/connection")
 const db=conn.sequelize;
-// const jwt_decode = require('jwt-decode');
+const jwt_decode = require('jwt-decode');
 const saltRounds = 10;
 const { v4: uuidv4 } = require('uuid');
-const Role_Permission = require("../Models/Role_Permission");
 // const sequelize = new Sequelize('mariadb');
 const Sequelize = require("sequelize");
 
@@ -18,7 +17,6 @@ module.exports = {
             'username', 'email',
             [Sequelize.fn('count', Sequelize.col('Role.id')) ,'RoleCount'],
             [Sequelize.fn('count', Sequelize.col('jabatan.id')) ,'JabatanCount']
-           
         ],
           include: [
             {
@@ -100,9 +98,6 @@ module.exports = {
               [Sequelize.fn('count', Sequelize.col('jabatan.id')) ,'JabatanCount']
              
           ],
-            
-          // limit: 2,
-          // offset: 1,
           include: [
             {
               model: db.role, as: "Role",
@@ -114,16 +109,18 @@ module.exports = {
             },
           ],
             group: ['users.id']
-            
             // where: {
             //   id: id
             // }
           })
           page_number=req.body.page;
           page_size=2;
-          if(result){
-           return res.json(result.slice((page_number - 1) * page_size, page_number * page_size))
-        }
+           const obj=result.slice((page_number - 1) * page_size, page_number * page_size);
+         
+          if(result.length){
+           return res.json({totalData:result.length,totalHalaman:Math.ceil(result.length/page_size),obj})
+          }
+          else return res.send({message:"data users is empty!"})
       }catch (error) {
         if (error.isJoi === true) error.status = 422
           next(error)
@@ -140,19 +137,13 @@ module.exports = {
       include: [
         {
         model: db.jabatan,
-        attributes: ['id']
-          // where:{
-          //   id:"e8af6db5-4b65-496a-815c-5f5c1856ec23"
-          // }
+        attributes: ['id','name']
         },
         {
           model: db.role, as: "Role",
           include: [
             {
-            model: db.permission, as: "Permission",
-              // where:{
-              //   id:"e8af6db5-4b65-496a-815c-5f5c1856ec23"
-              // }
+            model: db.permission, as: "Permission"
             }
           ]
         }
@@ -160,7 +151,6 @@ module.exports = {
     }).then(
       users => {
       const resObj = users.map(users => {
-
         //tidy up the user data
         return Object.assign(
           {},
@@ -171,7 +161,6 @@ module.exports = {
             jabatan:users.jabatan,
             role: users.Role
             .map(Role => {
-
             //   //tidy up the roles data
               return Object.assign(
                 {},
@@ -183,7 +172,6 @@ module.exports = {
                   description: Role.description, 
                   permission:Role.Permission
                   .map(Permission => {
-
             //         //tidy up the permission data
                     return Object.assign(
                       {},
@@ -201,9 +189,10 @@ module.exports = {
           }
         )
       });   
-      if(resObj){
+      if(resObj.length){
         return res.json(resObj[0])
        }
+       else return res.send({message:"User doesnt exist"})     
     });
       }catch (error) {
         if (error.isJoi === true) error.status = 422
@@ -211,126 +200,129 @@ module.exports = {
           }
         },
   UpdateUsers: async (req, res, next) => {
-          try { 
-            id = req.body.id;
-            username = req.body.username;
-            email = req.body.email;
-            password = req.body.password;
-            role = req.body.role;
-            jabatan_fungsional = req.body.jabatan_fungsional;
-            jabatan_struktual = req.body.jabatan_struktual;
-            avatar = req.body.avatar;
-            office_number = req.body.office_number;
-            personal_number = req.body.personal_number;
-            jabatanId = req.body.jabatanId;
-            blacklist = req.body.blacklist;
+    try { 
+      id = req.body.id;
+      username = req.body.username;
+      email = req.body.email;
+      password = req.body.password;
+      role = req.body.role;
+      jabatan_fungsional = req.body.jabatan_fungsional;
+      jabatan_struktual = req.body.jabatan_struktual;
+      avatar = req.body.avatar;
+      office_number = req.body.office_number;
+      personal_number = req.body.personal_number;
+      jabatanId = req.body.jabatanId;
+      blacklist = req.body.blacklist;
                 
-            let result = await db.users.findAndCountAll({
-              raw: true,
-              where: {
-                id: id
-              }
-            })
+      let result = await db.users.findAndCountAll({
+        raw: true,
+        where: {
+          id: id
+        }
+      })
                 
-            if(result.count&&password){
-              bcrypt.hash(password, saltRounds, (err, hash) => {
-              if (err) {
-                console.log(err);
-              }
-              const update = {
-                email: email,
-                username:username,
-                password: hash,
-                role: role,
-                jabatan_fungsional: jabatan_fungsional,
-                jabatan_struktual: jabatan_struktual,
-                avatar: avatar,
-                office_number: office_number,
-                personal_number: personal_number,
-                blacklist:blacklist,
-                jabatanId:jabatanId
-              };
-              // console.log(update)
+      if(result.count&&password){
+        bcrypt.hash(password, saltRounds, (err, hash) => {
+        if (err) {
+          console.log(err);
+        }
+        const update = {
+          email: email,
+          username:username,
+          password: hash,
+          role: role,
+          jabatan_fungsional: jabatan_fungsional,
+          jabatan_struktual: jabatan_struktual,
+          avatar: avatar,
+          office_number: office_number,
+          personal_number: personal_number,
+          blacklist:blacklist,
+          jabatanId:jabatanId
+        };
+        db.users.update(
+          update,{ 
+            where: { 
+              id: id 
+            } 
+          }).then(data =>{
+            return res.send({message:"update successfull"})
+          })       
+        });
+      }
+      else if(result.count){
+        const update = {
+          email: email,
+          username:username,
+          role: role,
+          jabatan_fungsional: jabatan_fungsional,
+          jabatan_struktual: jabatan_struktual,
+          avatar: avatar,
+          office_number: office_number,
+          personal_number: personal_number,
+          blacklist:blacklist,
+          jabatanId:jabatanId
+        };
+        db.users.update(
+          update,{ 
+            where: { 
+              id: id 
+            } 
+          })    
+        }
+    }catch (error) {
+      if (error.isJoi === true) error.status = 422
+        next(error)
+      }
+    },
+  CreateUsers: async (req, res, next) => {
+    try { 
+      username = req.body.username;
+      email = req.body.email;
+      password = req.body.password;
+      role = req.body.role;
+      jabatanId = req.body.jabatanId;
+      jabatan_fungsional = req.body.jabatan_fungsional;
+      jabatan_struktual = req.body.jabatan_struktual;
+      avatar = req.body.avatar;
+      office_number = req.body.office_number;
+      personal_number = req.body.personal_number;
+      blacklist = req.body.blacklist;
+      id = uuidv4();
 
-              db.users.update(
-                update,{ 
-                  where: { 
-                    id: id 
-                } 
-              })    
-            });
-          }
-          else if(result.count){
-            const update = {
-              email: email,
-              username:username,
-              role: role,
-              jabatan_fungsional: jabatan_fungsional,
-              jabatan_struktual: jabatan_struktual,
-              avatar: avatar,
-              office_number: office_number,
-              personal_number: personal_number,
-              blacklist:blacklist,
-              jabatanId:jabatanId
-            };
-            // console.log(update)
-
-            db.users.update(
-              update,{ 
-                where: { 
-                  id: id 
-              } 
-            })    
-          }
-        }catch (error) {
-          if (error.isJoi === true) error.status = 422
-            next(error)
-            }
-          },
-        CreateUsers: async (req, res, next) => {
-            try { 
-              username = req.body.username;
-              email = req.body.email;
-              password = req.body.password;
-              role = req.body.role;
-              jabatanId = req.body.jabatanId;
-              jabatan_fungsional = req.body.jabatan_fungsional;
-              jabatan_struktual = req.body.jabatan_struktual;
-              avatar = req.body.avatar;
-              office_number = req.body.office_number;
-              personal_number = req.body.personal_number;
-              blacklist = req.body.blacklist;
-              id = uuidv4();
-
-              const createUser = {
-                id: id, 
-                email: email,
-                username:username,
-                password: hash,
-                role: role,
-                jabatan_fungsional: jabatan_fungsional,
-                jabatan_struktual: jabatan_struktual,
-                avatar: avatar,
-                office_number: office_number,
-                personal_number: personal_number,
-                blacklist:blacklist,
-                jabatanId:jabatanId
-              };
+      bcrypt.hash(password, saltRounds, (err, hash) => {
+        if (err) {
+           console.log(err);
+        }
+      const createUser = {
+        id: id, 
+        email: email,
+        username:username,
+        password: hash,
+        role: role,
+        jabatan_fungsional: jabatan_fungsional,
+        jabatan_struktual: jabatan_struktual,
+        avatar: avatar,
+        office_number: office_number,
+        personal_number: personal_number,
+        blacklist:blacklist,
+        jabatanId:jabatanId
+      };
               
-              db.users.create(createUser)
-              .then(data => {
-                res.send(data);
-              }).catch(err => {
-                res.status(500).send({
-                message:
-                  err.message || "Some error occurred while creating jabatan"
-              });
-            });      
-          }catch (error) {
-            if (error.isJoi === true) error.status = 422
-              next(error)
-              }
-            },
+      db.users.create(createUser)
+        .then(data => {
+          res.send(data);
+        }).catch(err => {
+          res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating jabatan"
+          });
+        });          
+      });   
+      }catch (error) {
+        if (error.isJoi === true) error.status = 422
+          next(error)
+        }
+    },
   DeleteUsers: async (req, res, next) => {
     try { 
           id = req.body.id;
@@ -379,9 +371,10 @@ module.exports = {
               
           page_number=req.body.page;
           page_size=2;
-          if(result){
+          if(result.length){
            return res.json(result.slice((page_number - 1) * page_size, page_number * page_size))
-      }
+          }
+          else return res.send({message:"data jabatan is empty!"})
       }catch (error) {
         if (error.isJoi === true) error.status = 422
           next(error)
@@ -393,6 +386,7 @@ module.exports = {
                 
             let result = await db.jabatan.findAndCountAll({
               // raw: true,
+              attributes:['name','description','level'],
               include: [
                 {
                   model: db.users,
@@ -478,6 +472,8 @@ module.exports = {
               where: { 
                 id: id 
               } 
+            }).then(data =>{
+              return res.send({message:"update successfull"})
             })    
         }
       }catch (error) {
@@ -538,9 +534,10 @@ module.exports = {
          
       page_number=req.body.page;
       page_size=2;
-      if(result){
+      if(result.length){
        return res.json(result.slice((page_number - 1) * page_size, page_number * page_size))
-  }
+      }
+      else return res.send({message:"data roles is empty!"})
   }catch (error) {
     if (error.isJoi === true) error.status = 422
       next(error)
@@ -567,8 +564,7 @@ module.exports = {
           }
         }).then(
           role => {
-          const resObj = role.map(role => {
-    
+          const resObj = role.map(role => {    
             //tidy up the user data
             return Object.assign(
               {},
@@ -577,8 +573,7 @@ module.exports = {
                 name: role.name,
                 system: role.system_environment,
                 permission: role.Permission
-                .map(Permission => {
-    
+                .map(Permission => {    
                 //   //tidy up the roles data
                   return Object.assign(
                     {},
@@ -588,8 +583,7 @@ module.exports = {
                     )
                 }),
                 user: role.User
-                .map(User => {
-    
+                .map(User => {    
                 //   //tidy up the roles data
                   return Object.assign(
                     {},
@@ -600,12 +594,13 @@ module.exports = {
                 })
               }
             )
-          });   
-          if(resObj){
+          });
+          // console.log(resObj)   
+          if(resObj.length){
             return res.json(resObj[0])
            }
-        });
-            
+           else return res.send({message:"Role doesnt exist"})     
+        });      
       //   if(result.count){
       //    return res.json(result.rows[0])
       // }
@@ -679,7 +674,9 @@ module.exports = {
               where: { 
                 id: id 
               } 
-            })    
+            }).then(data =>{
+              return res.send({message:"update successfull"})
+            })       
         }
       }catch (error) {
         if (error.isJoi === true) error.status = 422
@@ -727,8 +724,7 @@ module.exports = {
           }
             
         ],
-        group: ['permissions.id']
-        
+        group: ['permissions.id']        
         // where: {
         //   id: id
         // }
@@ -736,9 +732,10 @@ module.exports = {
         
       page_number=req.body.page;
       page_size=2;
-      if(result){
+      if(result.length){
        return res.json(result.slice((page_number - 1) * page_size, page_number * page_size))
-   }
+      }
+      else return res.send({message:"data permissions is empty!"})
   }catch (error) {
     if (error.isJoi === true) error.status = 422
       next(error)
@@ -746,8 +743,7 @@ module.exports = {
     },
   SearchPermission: async (req, res, next) => {
       try { 
-        id = req.body.id;
-            
+        id = req.body.id;            
         // let result = 
         await db.permission.findAll({
           // raw: true, 
@@ -761,8 +757,7 @@ module.exports = {
           }
         }).then(
           permission => {
-          const resObj = permission.map(permission => {
-    
+          const resObj = permission.map(permission => {    
             //tidy up the user data
             return Object.assign(
               {},
@@ -803,9 +798,10 @@ module.exports = {
               }
             )
           });   
-          if(resObj){
+          if(resObj.length){
             return res.json(resObj[0])
            }
+           else return res.send({message:"Pemission doesnt exist"})     
         });
             
       //   if(result.count){
@@ -879,7 +875,9 @@ module.exports = {
               where: { 
                 id: id 
               } 
-            })    
+            }).then(data =>{
+              return res.send({message:"update successfull"})
+            })       
         }
       }catch (error) {
         if (error.isJoi === true) error.status = 422
@@ -943,9 +941,10 @@ module.exports = {
               
           page_number=req.body.page;
           page_size=2;
-          if(result){
+          if(result.length){
            return res.json(result.slice((page_number - 1) * page_size, page_number * page_size))
-       }
+          }
+          else return res.send({message:"data roles_permissions is empty!"})
       }catch (error) {
         if (error.isJoi === true) error.status = 422
           next(error)
@@ -1021,7 +1020,9 @@ module.exports = {
           roleId:role_id,
           permissionId:permission_id
           } 
-        })    
+        }).then(data =>{
+          return res.send({message:"update successfull"})
+        })       
       }catch (error) {
         if (error.isJoi === true) error.status = 422
         next(error)
@@ -1086,9 +1087,10 @@ module.exports = {
               
           page_number=req.body.page;
           page_size=2;
-          if(result){
+          if(result.length){
            return res.json(result.slice((page_number - 1) * page_size, page_number * page_size))
-       }
+          }
+          else return res.send({message:"data user_roles is empty!"})
       }catch (error) {
         if (error.isJoi === true) error.status = 422
           next(error)
@@ -1164,7 +1166,9 @@ module.exports = {
           roleId:role_id,
           userId: user_id
           } 
-        })    
+        }).then(data =>{
+          return res.send({message:"update successfull"})
+        })       
       }catch (error) {
         if (error.isJoi === true) error.status = 422
         next(error)
@@ -1252,7 +1256,9 @@ module.exports = {
               where: { 
                 id: id 
               } 
-            })    
+            }).then(data =>{
+              return res.send({message:"update successfull"})
+            })       
         }
       }catch (error) {
         if (error.isJoi === true) error.status = 422

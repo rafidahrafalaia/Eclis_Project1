@@ -13,30 +13,21 @@ var sso = new SSO({
 app.use(sso.middleware)
 
 //sso-ui
-router.get('/api/login-sso', sso.login, function(req, res) {
+router.get('/api/login-sso', sso.login, sso.middleware, function(req, res) {
     const session = req.session[ 'sso_user' ]
     statloggedIn=true;
-    console.log(session)
     console.log(session,statloggedIn,"session"); 
-    const token = jwt.sign({session:session}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '6h' })
-    const refresh = jwt.sign({session:session}, process.env.REFRESH_TOKEN_SECRET,{ expiresIn: '8h' })
+    const token = jwt.sign(session, process.env.ACCESS_TOKEN_SECRET, { expiresIn: process.env.ACCESS_TOKEN_LIFE })
+    const refresh = jwt.sign(session, process.env.REFRESH_TOKEN_SECRET,{ expiresIn: process.env.REFRESH_TOKEN_LIFE })
     res.cookie('tokenSSO', token, {
-      // maxAge: 21600 * 1000,
       httpOnly: true
     });
     res.cookie('refreshToken', refresh, {
-      // maxAge: 21800 * 1000,
       httpOnly: true
     });
     console.log("sessiongetUser",statloggedIn,session)
-    // const token = jwt.sign(session,process.env.ACCESS_TOKEN_SECRET,{ expiresIn: '5s' })
-    // res.cookie('tokenSSO', session, {
-    //     expires: new Date(Date.now() + 21600000),
-    //     httpOnly: true
-    //   });
     res.redirect('http://localhost:3000/dashboard');
 });
-
 router.get('/api/logout-sso',sso.logout, function(req, res){
     // res.status(200).clearCookie('tokenSSO', {
     //   path: '/'
@@ -49,10 +40,13 @@ router.get('/api/logout-sso',sso.logout, function(req, res){
 router.get('/api/middleware', sso.middleware);
 router.get('/api/user', sso.login, function(req, res) {
     res.json(req.sso_user);
+    console.log(req.sso_user,"reqSSO")
+    
 });
 router.get('/api/getUser', function(req, res) {
-    const session = req.session[ 'sso_user' ]
-    return res.send({ session });
+  const session = req.session[ 'sso_user' ]
+  console.log(session)
+  return res.json({ session });
 });
 router.get('/api/logoutsso', sso.clear, function(req, res) {
     res.status(200).clearCookie('tokenSSO', {
@@ -67,4 +61,5 @@ router.get('/api/logoutsso', sso.clear, function(req, res) {
 router.get('/api/route/to/critical/data', sso.block, function(req, res) {
 	res.json({ success: true });
 });
+// router.use(sso.middleware);
 module.exports = router

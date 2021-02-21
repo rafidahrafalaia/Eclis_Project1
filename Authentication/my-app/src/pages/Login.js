@@ -13,7 +13,6 @@ import { useHistory } from "react-router-dom";
 // }
 
 function Login() {
-  // let state = { redirect: null };
   const [email,setEmail] = useState("");
   const [userPassword,setUserPassword] = useState("");
   const [loginStatus, setLoginStatus] = useState("");
